@@ -13,7 +13,11 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 const WalletContextProvider = ({ children }: { children: React.ReactNode }) => {
   // Use environment variable for RPC endpoint, fallback to devnet if not set
   const endpoint = useMemo(() => {
-    return import.meta.env.VITE_SOLANA_RPC_ENDPOINT || clusterApiUrl('devnet');
+    return (
+      import.meta.env.VITE_SOLANA_RPC_ENDPOINT ||
+      "https://devnet.helius-rpc.com/?api-key=bc7fe6cf-7c24-4554-aada-85dd07631947" ||
+      clusterApiUrl('devnet')
+    );
   }, []);
 
   const wallets = useMemo(

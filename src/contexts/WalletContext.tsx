@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo } from 'react';
+import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
 
 type WalletType = 'phantom' | 'solflare' | null;
 
@@ -13,38 +14,25 @@ interface WalletContextType {
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [walletType, setWalletType] = useState<WalletType>(null);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const { connected, wallet, publicKey, select, connect, disconnect } = useSolanaWallet();
 
-  const connectWallet = async (type: WalletType) => {
-    // Simulate wallet connection
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Generate mock wallet address
-    const mockAddress = `${type?.slice(0, 4)}...${Math.random().toString(36).slice(2, 6)}`;
-    
-    setWalletType(type);
-    setWalletAddress(mockAddress);
-    setIsConnected(true);
-  };
-
-  const disconnectWallet = () => {
-    setIsConnected(false);
-    setWalletType(null);
-    setWalletAddress(null);
-  };
+  const value = useMemo<WalletContextType>(() => ({
+    isConnected: connected,
+    walletType: wallet?.adapter.name?.toLowerCase() as WalletType ?? null,
+    walletAddress: publicKey ? publicKey.toBase58() : null,
+    connectWallet: async (type: WalletType) => {
+      if (!type) throw new Error('Wallet type is required');
+      const name = type === 'phantom' ? 'Phantom' : 'Solflare';
+      await select(name);
+      await connect();
+    },
+    disconnectWallet: async () => {
+      await disconnect();
+    },
+  }), [connected, wallet, publicKey, select, connect, disconnect]);
 
   return (
-    <WalletContext.Provider
-      value={{
-        isConnected,
-        walletType,
-        walletAddress,
-        connectWallet,
-        disconnectWallet,
-      }}
-    >
+    <WalletContext.Provider value={value}>
       {children}
     </WalletContext.Provider>
   );
